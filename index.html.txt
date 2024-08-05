@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasan Efendi Arz Talebi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #006400;
+            color: #FFFF31;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background-color: #008000;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            max-width: 100px;
+        }
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .calendar-header {
+            font-weight: bold;
+            text-align: center;
+        }
+        .calendar button {
+            background-color: #006400;
+            border: none;
+            color: #FFFF31;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .calendar button:hover, .calendar button.selected {
+            background-color: #FFFF31;
+            color: #006400;
+        }
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .time-slots button {
+            background-color: #006400;
+            border: none;
+            color: #FFFF31;
+            padding: 5px;
+            cursor: pointer;
+        }
+        .time-slots button:hover, .time-slots button.selected {
+            background-color: #FFFF31;
+            color: #006400;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        input, select {
+            padding: 5px;
+            border: 1px solid #FFFF31;
+            background-color: #006400;
+            color: #FFFF31;
+        }
+        button[type="submit"] {
+            background-color: #FFFF31;
+            color: #006400;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/api/placeholder/100/100" alt="Logo" class="logo">
+        <h1>Hasan Efendi Arz Talebi</h1>
+        <select id="appointmentType">
+            <option value="15">Kısa Görüşme (15 dakika)</option>
+            <option value="30">Standart Görüşme (30 dakika)</option>
+            <option value="60">Uzun Görüşme (60 dakika)</option>
+        </select>
+        <h2>Tarih ve Saat Seçin</h2>
+        <div class="calendar-nav">
+            <button id="prevMonth">&lt;</button>
+            <span id="currentMonth"></span>
+            <button id="nextMonth">&gt;</button>
+        </div>
+        <div id="calendar" class="calendar">
+            <div class="calendar-header">Pzt</div>
+            <div class="calendar-header">Sal</div>
+            <div class="calendar-header">Çar</div>
+            <div class="calendar-header">Per</div>
+            <div class="calendar-header">Cum</div>
+            <div class="calendar-header">Cmt</div>
+            <div class="calendar-header">Paz</div>
+        </div>
+        <div id="timeSlots" class="time-slots"></div>
+        <form id="appointmentForm">
+            <input type="text" id="firstName" placeholder="Ad" required>
+            <input type="text" id="lastName" placeholder="Soyad" required>
+            <input type="tel" id="phone" placeholder="Telefon Numarası" required>
+            <input type="email" id="email" placeholder="E-posta" required>
+            <input type="text" id="guideName" placeholder="Rehber Adı">
+            <button type="submit">Randevu Talep Et</button>
+        </form>
+    </div>
+
+    <script>
+        let selectedDate = null;
+        let selectedTime = null;
+        let currentMonth = new Date();
+
+        function generateCalendar() {
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+            const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+            const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
+
+            document.getElementById('currentMonth').textContent = 
+                currentMonth.toLocaleString('tr-TR', { month: 'long', year: 'numeric' });
+
+            // Add day headers
+            const dayHeaders = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.textContent = day;
+                header.classList.add('calendar-header');
+                calendar.appendChild(header);
+            });
+
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < (firstDay + 6) % 7; i++) {
+                calendar.appendChild(document.createElement('div'));
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.addEventListener('click', () => selectDate(i));
+                calendar.appendChild(button);
+            }
+        }
+
+        function selectDate(day) {
+            selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+            updateCalendarSelection();
+            generateTimeSlots();
+        }
+
+        function updateCalendarSelection() {
+            const buttons = document.querySelectorAll('#calendar button');
+            buttons.forEach(button => {
+                button.classList.remove('selected');
+                if (selectedDate && parseInt(button.textContent) === selectedDate.getDate()) {
+                    button.classList.add('selected');
+                }
+            });
+        }
+
+        function generateTimeSlots() {
+            const timeSlots = document.getElementById('timeSlots');
+            timeSlots.innerHTML = '';
+            const slots = [
+                '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00',
+                '21:30', '22:00', '22:30', '23:00', '23:30', '00:00'
+            ];
+
+            slots.forEach(slot => {
+                const button = document.createElement('button');
+                button.textContent = slot;
+                button.addEventListener('click', () => selectTime(slot));
+                timeSlots.appendChild(button);
+            });
+        }
+
+        function selectTime(time) {
+            selectedTime = time;
+            updateTimeSelection();
+        }
+
+        function updateTimeSelection() {
+            const buttons = document.querySelectorAll('#timeSlots button');
+            buttons.forEach(button => {
+                button.classList.remove('selected');
+                if (button.textContent === selectedTime) {
+                    button.classList.add('selected');
+                }
+            });
+        }
+
+        document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!selectedDate || !selectedTime) {
+                alert('Lütfen bir tarih ve saat seçin.');
+                return;
+            }
+            const formData = new FormData(this);
+            const appointmentData = {
+                type: document.getElementById('appointmentType').value,
+                date: selectedDate.toDateString(),
+                time: selectedTime,
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                phone: formData.get('phone'),
+                email: formData.get('email'),
+                guideName: formData.get('guideName')
+            };
+            console.log('Randevu Talebi:', appointmentData);
+            alert('Randevu talebiniz alındı. Teşekkür ederiz!');
+            // Burada gerçek bir API çağrısı yapılabilir
+        });
+
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            generateCalendar();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            generateCalendar();
+        });
+
+        generateCalendar();
+    </script>
+</body>
+</html>
