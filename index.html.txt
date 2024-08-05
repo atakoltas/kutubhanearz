@@ -137,7 +137,7 @@
             const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
             const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
 
-            document.getElementById('currentMonth').textContent = 
+            document.getElementById('currentMonth').textContent =
                 currentMonth.toLocaleString('tr-TR', { month: 'long', year: 'numeric' });
 
             // Add day headers
